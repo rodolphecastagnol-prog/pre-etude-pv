@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pré-étude photovoltaïque</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d2327; --muted: #5f6b72;
+    --line: #e2dfd6; --accent: #d9822b; --accent-ink: #8a4a0f; --ok: #2f7d4f; --warn: #b4531d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 28px 24px 8px; max-width: 1100px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 24px 48px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { margin: 0 0 14px; font-size: 17px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input, select { width: 100%; padding: 9px 10px; border: 1px solid #cfcabd; border-radius: 8px; font: inherit; background: #fff; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+  .full { grid-column: 1 / -1; }
+  .types { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .types label { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; border: 1px solid var(--line); border-radius: 8px; padding: 10px; cursor: pointer; margin: 0; }
+  .types input { width: auto; margin-top: 3px; }
+  .types label:has(input:checked) { border-color: var(--accent); background: #fdf4ea; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent-ink); }
+  .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  button.ghost { background: #fff; color: var(--accent-ink); }
+  button:disabled { opacity: .6; cursor: wait; }
+  #status { margin-top: 10px; color: var(--muted); font-size: 14px; }
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .kpi .v { font-size: 24px; font-weight: 700; }
+  .kpi .l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .note { font-size: 13px; color: var(--muted); }
+  .alerts { margin: 0; padding-left: 18px; }
+  .alerts li { margin-bottom: 4px; }
+  .alerts li.warn { color: var(--warn); }
+  .bars { display: flex; gap: 6px; align-items: flex-end; height: 120px; margin-top: 8px; }
+  .bars div { flex: 1; background: var(--accent); border-radius: 4px 4px 0 0; position: relative; min-height: 2px; }
+  .bars span { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
+  .bars-wrap { padding-bottom: 22px; }
+  .meta { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .disclaimer { border-left: 4px solid var(--accent); background: #fdf4ea; padding: 12px 14px; border-radius: 6px; font-size: 13px; }
+  #result { display: none; }
+  .mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: #fff; margin-bottom: 16px; }
+  .mode label { margin: 0; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .mode input { display: none; }
+  .mode label:has(input:checked) { background: var(--accent); color: #fff; }
+  #complet { display: none; }
+  body.complet #complet { display: block; }
+  body.complet .simple-only { display: none; }
+  .pans-head, .pan { display: grid; grid-template-columns: 1.3fr 1fr .7fr .8fr .7fr 40px; gap: 8px; align-items: center; }
+  .pans-head { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .pan { margin-bottom: 6px; }
+  button.small { padding: 6px 10px; font-size: 13px; }
+  .mois-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+  .mois-grid input { padding: 6px; }
+  h3 { font-size: 15px; margin: 22px 0 10px; }
+  h3 small { font-weight: 400; color: var(--muted); }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart text { font-size: 11px; fill: var(--muted); }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 4px 0 6px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  tr.reco td { background: #fdf4ea; font-weight: 600; }
+  .two { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  @media (max-width: 640px) { .pans-head { display: none; } .pan { grid-template-columns: 1fr 1fr; } .mois-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media print {
+    body { background: #fff; }
+    #form-card, .actions, #status { display: none !important; }
+    .card { border: none; padding: 0 0 10px; break-inside: avoid; }
+    header { padding-top: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pré-étude photovoltaïque</h1>
+  <p>Saisissez l'adresse et la consommation du client. La page calcule les panneaux, les onduleurs, les batteries et ce qu'il faut ajouter au tableau électrique.</p>
+</header>
+<main>
+  <section class="card" id="form-card">
+    <div class="mode" role="radiogroup" aria-label="Type d'étude">
+      <label><input type="radio" name="mode" value="simple" checked>Étude rapide</label>
+      <label><input type="radio" name="mode" value="complet">Étude complète</label>
+    </div>
+    <h2>Client</h2>
+    <div class="grid">
+      <div><label for="nom">Nom du client <small>(facultatif)</small></label><input id="nom" placeholder="M. Dupont"></div>
+      <div class="full"><label for="adresse">Adresse du chantier</label><input id="adresse" placeholder="12 rue Victor Hugo, 97200 Fort-de-France" autocomplete="street-address"></div>
+      <div><label for="conso">Consommation annuelle <small>(kWh/an, facture)</small></label><input id="conso" type="number" min="100" step="100" placeholder="6500"></div>
+      <div><label for="kva">Puissance souscrite <small>(kVA)</small></label>
+        <select id="kva">
+          <option>3</option><option>6</option><option selected>9</option><option>12</option><option>15</option><option>18</option><option>24</option><option>30</option><option>36</option>
+        </select></div>
+      <div><label for="phase">Raccordement</label>
+        <select id="phase"><option value="auto">Automatique (selon kVA)</option><option value="mono">Monophasé</option><option value="tri">Triphasé</option></select></div>
+    </div>
+
+    <h2 style="margin-top:20px">Type d'installation</h2>
+    <div class="types">
+      <label><input type="radio" name="type" value="autoconso" checked><span><b>Autoconsommation</b><br><small>Surplus vendu, sans batterie</small></span></label>
+      <label><input type="radio" name="type" value="batterie"><span><b>Autoconsommation + batterie</b><br><small>Stockage du soir et secours en cas de coupure</small></span></label>
+      <label><input type="radio" name="type" value="isole"><span><b>Site isolé</b><br><small>Sans réseau, 100 % batteries</small></span></label>
+      <label><input type="radio" name="type" value="revente"><span><b>Revente totale</b><br><small>Toute la production est injectée</small></span></label>
+    </div>
+
+    <details>
+      <summary>Toiture et câblage (facultatif, des valeurs par défaut sont prévues)</summary>
+      <div class="grid" style="margin-top:12px">
+        <div class="simple-only"><label for="surface">Surface de toit exploitable <small>(m², vide = pas de limite)</small></label><input id="surface" type="number" min="0" step="1" placeholder="40"></div>
+        <div class="simple-only"><label for="orient">Orientation du pan</label>
+          <select id="orient"><option value="180">Sud</option><option value="135">Sud-Est</option><option value="225">Sud-Ouest</option><option value="90">Est</option><option value="270">Ouest</option><option value="45">Nord-Est</option><option value="315">Nord-Ouest</option><option value="0">Nord</option></select></div>
+        <div class="simple-only"><label for="incl">Inclinaison <small>(°, vide = auto)</small></label><input id="incl" type="number" min="0" max="90" step="1" placeholder="auto"></div>
+        <div class="simple-only"><label for="jour">Part de la conso en journée <small>(%)</small></label><input id="jour" type="number" min="10" max="90" step="5" value="45"></div>
+        <div><label for="ldc">Longueur câble DC <small>(toit → onduleur, m)</small></label><input id="ldc" type="number" min="1" step="1" value="15"></div>
+        <div><label for="lac">Longueur câble AC <small>(onduleur → tableau, m)</small></label><input id="lac" type="number" min="1" step="1" value="10"></div>
+        <div><label for="autonomie">Autonomie batterie site isolé <small>(jours, vide = auto)</small></label><input id="autonomie" type="number" min="0.5" step="0.5" placeholder="auto"></div>
+        <div class="simple-only"><label for="yield">Productible forcé <small>(kWh/kWc/an, vide = calculé)</small></label><input id="yield" type="number" min="500" max="2500" step="10" placeholder="auto"></div>
+      </div>
+    </details>
+
+    <div id="complet">
+      <h3>Pans de toiture</h3>
+      <div class="pans-head"><span>Nom</span><span>Orientation</span><span>Inclinaison (°)</span><span>Surface (m²)</span><span>Ombrage (%)</span><span></span></div>
+      <div id="pans"></div>
+      <button type="button" class="ghost small" id="addPan">+ Ajouter un pan</button>
+      <p class="note">Ombrage : part de l'ensoleillement perdue à cause d'arbres, de bâtiments ou de reliefs (0 si le pan est dégagé).</p>
+
+      <h3>Habitudes de consommation</h3>
+      <div class="grid">
+        <div><label for="profil">Profil horaire du client</label><select id="profil"></select></div>
+      </div>
+      <details>
+        <summary>Consommation mois par mois (facultatif, depuis les factures)</summary>
+        <div class="mois-grid" id="moisConso"></div>
+        <p class="note">Si les 12 mois sont remplis, ils remplacent la consommation annuelle.</p>
+      </details>
+
+      <h3>Données financières <small>(valeurs par défaut à vérifier avec Robert)</small></h3>
+      <div class="grid" id="ecoGrid"></div>
+    </div>
+
+    <div class="actions">
+      <button id="go">Calculer l'étude</button>
+      <button class="ghost" id="print" type="button" disabled>Imprimer / PDF</button>
+    </div>
+    <div id="status" role="status"></div>
+  </section>
+
+  <section id="result"></section>
+</main>
+
+<script id="engine">
+/* ====== Moteur de calcul (pur, testable) ====== */
+const PANEL = { nom: "Module monocristallin 450 Wc (générique)", p: 450, vmp: 33.6, imp: 13.4, voc: 40.0, isc: 14.1,
+  cVoc: -0.0025, cVmp: -0.0030, larg: 1.134, haut: 1.762 };
+PANEL.aire = PANEL.larg * PANEL.haut;
+
+const INV = {
+  reseau_mono: [3, 3.68, 5, 6].map(p => ({ p, gamme: "Onduleur réseau monophasé", vdcMax: 600, mpptMin: 90, mpptMax: 560, nMppt: 2, iscMppt: 20, phase: "mono" })),
+  reseau_tri: [5, 8, 10, 15, 20].map(p => ({ p, gamme: "Onduleur réseau triphasé", vdcMax: 1000, mpptMin: 180, mpptMax: 850, nMppt: 2, iscMppt: 40, phase: "tri" })),
+  hybride_mono: [3.6, 5, 6].map(p => ({ p, gamme: "Onduleur hybride monophasé (batterie 48 V)", vdcMax: 550, mpptMin: 120, mpptMax: 500, nMppt: 2, iscMppt: 20, phase: "mono", batt: "BT" })),
+  hybride_tri: [5, 8, 10, 12].map(p => ({ p, gamme: "Onduleur hybride triphasé (batterie haute tension)", vdcMax: 1000, mpptMin: 160, mpptMax: 850, nMppt: 2, iscMppt: 40, phase: "tri", batt: "HT" })),
+  isole: [3, 5, 8].map(p => ({ p, gamme: "Onduleur-chargeur site isolé avec régulateur MPPT (48 V)", vdcMax: 500, mpptMin: 120, mpptMax: 450, nMppt: 2, iscMppt: 22, phase: "mono", batt: "BT" })),
+};
+const BATT = { nom: "Module batterie LFP 5,12 kWh", kwh: 5.12, dod: 0.9 };
+
+const STD_DISJ = [10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125];
+const STD_DC_PROT = [63, 80, 100, 125, 160, 200, 250, 315, 400];
+const AC_SECTIONS = [[1.5, 16], [2.5, 20], [4, 25], [6, 32], [10, 50], [16, 63], [25, 80], [35, 100], [50, 125]];
+const DC_PV_SECTIONS = [4, 6, 10, 16];
+const BATT_SECTIONS = [[16, 80], [25, 110], [35, 135], [50, 170], [70, 215], [95, 260], [120, 300], [150, 340]];
+const RHO = 0.023; // Ω·mm²/m, cuivre en service
+
+const round = (x, d = 0) => Math.round(x * 10 ** d) / 10 ** d;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+function tropical(lat) { return Math.abs(lat) < 23.5; }
+
+/* GHI annuel (kWh/m²) et ratio mois le plus faible, à défaut de données météo */
+function siteParDefaut(lat) {
+  const a = Math.abs(lat);
+  return { ghi: clamp(2100 - 22 * (a - 10), 900, 1900), ratioMin: clamp(0.85 - 0.6 * (a - 15) / 35, 0.25, 0.85), source: "estimation selon la latitude" };
+}
+
+/* Gain du plan incliné par rapport à l'horizontale (modèle simplifié) */
+function facteurPlan(lat, incl, azimut) {
+  const b = incl * Math.PI / 180;
+  const optimal = lat >= 0 ? 180 : 0;
+  let dev = Math.abs(azimut - optimal) % 360; if (dev > 180) dev = 360 - dev;
+  const phi = Math.abs(lat) * Math.PI / 180;
+  return clamp(Math.cos(b) + 0.6 * Math.sin(b) * Math.tan(phi) * Math.cos(dev * Math.PI / 180) + 0.03 * Math.sin(b), 0.5, 1.25);
+}
+
+function configChaines(n, inv, tmin, tmax, nMaxUnit) {
+  const vocMax = PANEL.voc * (1 + PANEL.cVoc * (tmin - 25));
+  const vmpMin = PANEL.vmp * (1 + PANEL.cVmp * (tmax - 25));
+  const vmpMax = PANEL.vmp * (1 + PANEL.cVmp * (tmin - 25));
+  const smax = Math.floor(Math.min(inv.vdcMax / vocMax, inv.mpptMax / vmpMax));
+  const smin = Math.ceil(inv.mpptMin / vmpMin);
+  const parMppt = Math.max(1, Math.floor(inv.iscMppt / PANEL.isc));
+  const maxChaines = inv.nMppt * parMppt;
+  let best = null;
+  for (let k = 1; k <= maxChaines; k++) {
+    let s = clamp(Math.round(n / k), smin, smax);
+    if (nMaxUnit && k * s > nMaxUnit) s = Math.floor(nMaxUnit / k);
+    if (s < smin) continue;
+    const ecart = Math.abs(k * s - n);
+    if (!best || ecart < best.ecart) best = { k, s, ecart };
+  }
+  if (!best) return null;
+  return { chaines: best.k, parChaine: best.s, panneaux: best.k * best.s, smin, smax, parMppt,
+    vocMax: round(best.s * vocMax), vmpMin: round(best.s * vmpMin), vmpNom: round(best.s * PANEL.vmp) };
+}
+
+function choisirOnduleurs(gamme, kwc, capAc, ratioMax = 1.3) {
+  for (let c = 1; c <= 10; c++) {
+    const parUnite = kwc / c;
+    const m = gamme.find(g => g.p * ratioMax >= parUnite && (!capAc || g.p * c <= capAc + 1e-9));
+    if (m) return { modele: m, nombre: c };
+  }
+  const plusGros = gamme[gamme.length - 1];
+  return { modele: plusGros, nombre: Math.ceil(kwc / (plusGros.p * ratioMax)) };
+}
+
+function sectionAC(ib, inDisj, L, tri) {
+  const U = tri ? 400 : 230, b = tri ? Math.sqrt(3) : 2;
+  for (const [s, imax] of AC_SECTIONS) {
+    if (imax < inDisj) continue;
+    const du = b * RHO * L * ib / s / U * 100;
+    if (du <= 1) return { s, du: round(du, 2) };
+  }
+  const [s] = AC_SECTIONS[AC_SECTIONS.length - 1];
+  return { s, du: round(b * RHO * L * ib / s / U * 100, 2) };
+}
+
+function dimensionner(e, site) {
+  const alertes = [];
+  const lat = site.lat;
+  const trop = tropical(lat);
+  const tri = e.phase === "tri" || (e.phase === "auto" && e.kva > 12);
+  if (!tri && e.kva > 12) alertes.push({ w: 1, t: "Au-delà de 12 kVA, le raccordement est normalement triphasé. Vérifiez le compteur." });
+  const incl = e.incl != null ? e.incl : (trop ? 15 : clamp(Math.round(Math.abs(lat)), 10, 35));
+  const pr = trop ? 0.77 : 0.80;
+  const fPlan = facteurPlan(lat, incl, e.azimut);
+  const productible = e.yieldForce || round(site.ghi * fPlan * pr);
+  const jour = clamp(e.partJour, 0.1, 0.9);
+  const ej = e.conso / 365;
+
+  // Plafond d'injection
+  const capInj = tri ? Math.min(e.kva, 36) : Math.min(e.kva, 6);
+  const nMaxToit = e.nMaxToit != null ? e.nMaxToit : (e.surface ? Math.floor(e.surface / (PANEL.aire * 1.1)) : null);
+
+  // 1. Puissance crête visée
+  let kwcCible, batterieUtile = 0, autonomie = null;
+  if (e.type === "autoconso") {
+    kwcCible = e.conso * jour * 1.2 / productible;
+  } else if (e.type === "batterie") {
+    kwcCible = e.conso * 0.85 / productible;
+    batterieUtile = ej * (1 - jour);
+  } else if (e.type === "revente") {
+    kwcCible = e.conso / productible;
+  } else { // isolé
+    const ydMin = productible / 365 * site.ratioMin;
+    const eta = jour + (1 - jour) * 0.9;
+    kwcCible = ej / (ydMin * eta) * 1.1;
+    autonomie = e.autonomie || (trop ? 1.5 : 3);
+    batterieUtile = ej * autonomie;
+  }
+  if (!e.nForce && e.type !== "isole" && kwcCible > capInj * 1.3) {
+    alertes.push({ w: 1, t: `Puissance plafonnée à ${round(capInj * 1.3, 1)} kWc : l'injection est limitée à ${capInj} kVA (${tri ? "triphasé" : "monophasé, 6 kVA max"} et puissance souscrite).` });
+    kwcCible = capInj * 1.3;
+  }
+  let nCible = Math.max(2, Math.ceil(kwcCible * 1000 / PANEL.p));
+  if (e.nForce) nCible = e.type === "isole" ? e.nForce : Math.min(e.nForce, Math.floor(capInj * 1.3 * 1000 / PANEL.p));
+  if (nMaxToit != null && nCible > nMaxToit) {
+    alertes.push({ w: 1, t: `Le toit ne peut accueillir que ${nMaxToit} panneaux (${e.surface} m²) au lieu des ${nCible} nécessaires. La couverture sera réduite.` });
+    nCible = nMaxToit;
+  }
+  if (nMaxToit != null && nMaxToit < 2) return { erreur: "Surface de toit insuffisante pour poser des panneaux." };
+
+  // 2. Onduleurs
+  let gamme;
+  if (e.type === "isole") gamme = INV.isole;
+  else if (e.type === "batterie") gamme = tri ? INV.hybride_tri : INV.hybride_mono;
+  else gamme = tri ? INV.reseau_tri : INV.reseau_mono;
+
+  const kwcBrut = nCible * PANEL.p / 1000;
+  let ond;
+  if (e.type === "isole") {
+    const pointe = e.kva * 0.7;
+    const besoin = Math.max(pointe, kwcBrut / 1.3);
+    if (tri) {
+      const parPhase = gamme.find(g => g.p >= besoin / 3) || gamme[gamme.length - 1];
+      ond = { modele: parPhase, nombre: 3 * Math.max(1, Math.ceil(besoin / 3 / parPhase.p)) };
+    } else ond = choisirOnduleurs(gamme, besoin * 1.3, null);
+    if (tri) { alertes.push({ w: 0, t: "Site isolé triphasé : 3 onduleurs-chargeurs (un par phase), couplés en mode triphasé." }); }
+  } else {
+    ond = choisirOnduleurs(gamme, kwcBrut, capInj);
+  }
+
+  // 3. Chaînes
+  const tmin = trop ? 18 : -10, tmax = trop ? 75 : 70;
+  const nParUnite = Math.ceil(nCible / ond.nombre);
+  const nMaxUnite = nMaxToit != null ? Math.floor(nMaxToit / ond.nombre) : null;
+  const ch = configChaines(nParUnite, ond.modele, tmin, tmax, nMaxUnite);
+  if (!ch) return { erreur: "Impossible de trouver un câblage en chaînes compatible avec l'onduleur. Augmentez la surface ou changez de type." };
+  const nPanneaux = ch.panneaux * ond.nombre;
+  const kwc = nPanneaux * PANEL.p / 1000;
+  const pac = ond.modele.p * ond.nombre;
+  const ratio = kwc / pac;
+  if (e.type !== "isole" && ratio > 1.35) alertes.push({ w: 1, t: `Rapport DC/AC élevé (${round(ratio, 2)}) : écrêtage possible aux heures de pointe.` });
+  if (e.type !== "isole" && ratio < 0.8) alertes.push({ w: 0, t: `Onduleur un peu surdimensionné (rapport DC/AC ${round(ratio, 2)}). Acceptable, mais un modèle plus petit irait aussi.` });
+  if (e.type !== "isole" && pac > e.kva) alertes.push({ w: 1, t: `La puissance des onduleurs (${pac} kW) dépasse la puissance souscrite (${e.kva} kVA). Il faut augmenter l'abonnement ou limiter l'injection.` });
+
+  // 4. Batteries
+  let batt = null;
+  if (e.type === "batterie" || e.type === "isole") {
+    const nominal = batterieUtile / BATT.dod / (e.type === "isole" ? 0.95 : 1);
+    const nb = e.battForce || Math.max(e.type === "isole" ? 2 : 1, Math.ceil(nominal / BATT.kwh));
+    batt = { modules: nb, kwh: round(nb * BATT.kwh, 2), utile: round(nb * BATT.kwh * BATT.dod, 1), besoin: round(batterieUtile, 1), autonomie };
+  }
+
+  // 5. Production et couverture
+  const prod = kwc * productible;
+  let autoconso, couverture, injection;
+  if (e.type === "revente") { autoconso = 0; injection = prod; couverture = prod / e.conso; }
+  else if (e.type === "autoconso") {
+    autoconso = Math.min(prod * 0.9, e.conso * jour * 0.95);
+    injection = prod - autoconso; couverture = autoconso / e.conso;
+  } else if (e.type === "batterie") {
+    const direct = Math.min(prod * 0.9, e.conso * jour * 0.95);
+    const stocke = Math.min(batt.utile * 365 * 0.85, e.conso * (1 - jour), Math.max(0, prod - direct) * 0.9);
+    autoconso = direct + stocke; injection = Math.max(0, prod - direct - stocke / 0.9); couverture = autoconso / e.conso;
+  } else {
+    autoconso = Math.min(prod, e.conso); injection = 0;
+    couverture = (kwc * productible / 365 * site.ratioMin * (jour + (1 - jour) * 0.9)) / ej;
+  }
+
+  // 6. Électricité
+  const iscMax = 1.25 * PANEL.isc;
+  const vStr = ch.vmpNom;
+  let sDC = DC_PV_SECTIONS[DC_PV_SECTIONS.length - 1], duDC = 0;
+  for (const s of DC_PV_SECTIONS) { const du = 2 * RHO * e.ldc * PANEL.imp / s / vStr * 100; if (du <= 1) { sDC = s; duDC = du; break; } duDC = du; }
+  const chainesParMppt = Math.ceil(ch.chaines / ond.modele.nMppt);
+  const iac = ond.modele.p * 1000 / (tri && ond.modele.phase === "tri" ? Math.sqrt(3) * 400 : 230);
+  const triAC = tri && ond.modele.phase === "tri";
+  const disj = STD_DISJ.find(x => x >= iac * 1.1) || STD_DISJ[STD_DISJ.length - 1];
+  const cAC = sectionAC(iac, disj, e.lac, triAC);
+  const poles = triAC ? "4P" : "2P";
+
+  const tableau = [];
+  const cables = [];
+  // DC
+  cables.push({ c: "Câble solaire PV1-F / H1Z2Z2-K (DC, + et −)", s: `${sDC} mm²`, l: `${round(2 * e.ldc * ch.chaines * ond.nombre)} m`, n: `${ch.chaines * ond.nombre} chaîne(s), chute ${round(duDC, 2)} %` });
+  cables.push({ c: "Connecteurs MC4 (paires)", s: "—", l: "—", n: `${ch.chaines * ond.nombre * 2} paires minimum` });
+  tableau.push({ z: "Coffret DC (par onduleur)", e: `Interrupteur-sectionneur DC ≥ ${Math.ceil(ch.vocMax / 100) * 100} V, ≥ ${Math.ceil(iscMax * chainesParMppt)} A`, q: ond.nombre, n: "Souvent intégré à l'onduleur. Sinon, coffret séparé." });
+  tableau.push({ z: "Coffret DC (par onduleur)", e: `Parafoudre DC type 2, Ucpv ≥ ${Math.ceil(ch.vocMax * 1.2 / 50) * 50} V`, q: ond.nombre, n: trop ? "Recommandé dans les Antilles (densité de foudre élevée)" : "Obligatoire si la longueur DC dépasse le seuil du guide UTE C15-712-1" });
+  if (chainesParMppt >= 3) tableau.push({ z: "Coffret DC", e: `Fusibles gPV ${Math.ceil(iscMax / 2) * 2} A sur + et −`, q: ch.chaines * ond.nombre * 2, n: "3 chaînes ou plus en parallèle" });
+  // AC
+  const ligneACnom = e.type === "isole" ? "Sortie AC onduleur-chargeur → tableau" : "Onduleur → tableau";
+  cables.push({ c: `Câble AC R2V / U1000 R2V (${ligneACnom})`, s: `${triAC ? "5G" : "3G"}${cAC.s} mm²`, l: `${e.lac * ond.nombre} m`, n: `chute ${cAC.du} %, Ib = ${round(iac, 1)} A` });
+  tableau.push({ z: "Tableau principal", e: `Disjoncteur ${poles} ${disj} A courbe C (${e.type === "isole" ? "sortie onduleur-chargeur" : "départ PV"})`, q: ond.nombre, n: `Ib = ${round(iac, 1)} A par onduleur` });
+  tableau.push({ z: "Tableau principal", e: `Interrupteur différentiel 30 mA type A ${tri ? "4P" : poles} ${STD_DISJ.find(x => x >= disj && x >= 25) || disj} A`, q: e.type === "isole" ? 1 : ond.nombre, n: "Type B si la notice de l'onduleur l'exige (pas de séparation galvanique)" });
+  tableau.push({ z: "Tableau principal", e: `Parafoudre AC type 2 ${triAC ? "tétrapolaire" : "bipolaire"}`, q: 1, n: trop ? "Fortement recommandé dans les Antilles" : "Selon l'analyse du risque foudre" });
+  if (e.type !== "isole") tableau.push({ z: "Tableau principal", e: "Étiquettes de signalisation « Installation photovoltaïque, double alimentation »", q: 1, n: "Exigées par le Consuel" });
+  if (e.type === "batterie" || e.type === "isole") {
+    const ht = ond.modele.batt === "HT";
+    if (ht) {
+      cables.push({ c: "Câble batterie HT (fourni par le fabricant)", s: "≈ 6 mm²", l: "≤ 3 m", n: "Batterie haute tension" });
+      tableau.push({ z: "Batterie", e: "Sectionneur / disjoncteur DC batterie HT (souvent intégré)", q: ond.nombre, n: "Selon le fabricant" });
+    } else {
+      const ib = ond.modele.p * 1000 / 46 / 0.95;
+      const prot = STD_DC_PROT.find(x => x >= ib * 1.25) || STD_DC_PROT[STD_DC_PROT.length - 1];
+      const sec = (BATT_SECTIONS.find(([, imax]) => imax >= prot) || BATT_SECTIONS[BATT_SECTIONS.length - 1])[0];
+      cables.push({ c: "Câble batterie 48 V (souple H07RN-F ou équivalent, + et −)", s: `${sec} mm²`, l: `2 × ≤ 3 m par onduleur`, n: `Ib ≈ ${round(ib)} A, cosses serties` });
+      tableau.push({ z: "Batterie", e: `Fusible / disjoncteur DC batterie ${prot} A (48 V)`, q: ond.nombre, n: "Au plus près de la batterie" });
+    }
+    if (e.type === "batterie") tableau.push({ z: "Tableau principal", e: "Tableau secoursé (circuits prioritaires) + inverseur", q: 1, n: "Pour garder frigo, éclairage et box pendant une coupure EDF" });
+  }
+  if (e.type === "isole") {
+    tableau.push({ z: "Tableau principal", e: "Disjoncteur de tête (remplace le disjoncteur de branchement)", q: 1, n: "Calibré sur la sortie de l'onduleur-chargeur" });
+    tableau.push({ z: "Option", e: "Entrée groupe électrogène + inverseur de source", q: 1, n: "Recommandé pour les périodes peu ensoleillées" });
+  } else {
+    tableau.push({ z: "Point de livraison", e: e.type === "revente" ? "Second compteur de production (fourni par le gestionnaire de réseau)" : "Compteur communicant (existant), déclaration d'autoconsommation", q: 1, n: "Démarches auprès d'EDF SEI / Enedis" });
+  }
+  cables.push({ c: "Liaison équipotentielle des structures (cuivre vert-jaune)", s: "6 mm² min.", l: `${round(e.ldc + 5)} m`, n: "16 mm² si paratonnerre ou parafoudre éloigné" });
+
+  if (trop) alertes.push({ w: 0, t: "Zone cyclonique : système de fixation certifié pour les vents cycloniques (DTU, Eurocode 1, règles Antilles)." });
+  if (site.ghiSource === "defaut") alertes.push({ w: 1, t: "Ensoleillement estimé selon la latitude (pas de données météo). Vérifiez avec PVGIS." });
+
+  return {
+    tri, incl, productible, fPlan: round(fPlan, 2), pr,
+    panneaux: { nombre: nPanneaux, modele: PANEL.nom, kwc: round(kwc, 2), surface: round(nPanneaux * PANEL.aire, 1) },
+    onduleur: { modele: `${ond.modele.gamme} ${String(ond.modele.p).replace(".", ",")} kW`, nombre: ond.nombre, pac: round(pac, 2), ratio: round(ratio, 2),
+      chaines: ch.chaines, parChaine: ch.parChaine, plage: [ch.smin, ch.smax], vocMax: ch.vocMax, vmpMin: ch.vmpMin, vmpNom: ch.vmpNom, nMppt: ond.modele.nMppt, chainesParMppt },
+    batterie: batt,
+    energie: { production: Math.round(prod), autoconso: Math.round(autoconso), injection: Math.round(injection), couverture: round(couverture * 100) },
+    tableau, cables, alertes, capInj, pertes: { dc: round(duDC, 2), ac: cAC.du },
+  };
+}
+
+/* ====== Étude complète : simulation heure par heure ====== */
+const GAMMA_P = -0.0034;          // coefficient de température Pmax (/°C)
+const PERTES_DC_DIVERSES = 0.08;  // salissures 3 %, dispersion 2 %, vieillissement initial 1,5 %, disponibilité 1,5 %
+const ETA_OND = 0.97, ETA_BATT = 0.95, ALBEDO = 0.2;
+const PROFILS = {
+  absent:    { nom: "Foyer absent en journée", h: [0.5,0.4,0.4,0.4,0.4,0.6,1.2,1.5,1.0,0.6,0.5,0.5,0.6,0.5,0.5,0.6,0.9,1.4,1.9,2.1,2.0,1.6,1.1,0.7] },
+  present:   { nom: "Foyer présent en journée (retraités, télétravail)", h: [0.5,0.4,0.4,0.4,0.4,0.5,0.9,1.2,1.2,1.1,1.1,1.3,1.4,1.2,1.1,1.1,1.2,1.4,1.7,1.8,1.7,1.4,1.0,0.7] },
+  clim_jour: { nom: "Climatisation en journée", h: [0.6,0.5,0.5,0.5,0.5,0.6,0.9,1.1,1.3,1.5,1.7,1.9,2.0,2.0,1.9,1.7,1.5,1.4,1.4,1.4,1.3,1.1,0.9,0.7] },
+  clim_nuit: { nom: "Climatisation des chambres la nuit", h: [1.4,1.4,1.3,1.3,1.2,1.0,0.9,1.0,0.7,0.6,0.6,0.6,0.7,0.6,0.6,0.6,0.8,1.2,1.6,1.8,1.7,1.6,1.5,1.4] },
+  pro:       { nom: "Commerce / bureau (8 h - 18 h)", h: [0.3,0.3,0.3,0.3,0.3,0.3,0.5,1.2,2.0,2.2,2.3,2.3,2.0,2.2,2.3,2.2,2.0,1.4,0.7,0.4,0.3,0.3,0.3,0.3] },
+};
+const SAISON_TROP = [0.95, 0.92, 0.97, 1.0, 1.03, 1.05, 1.06, 1.07, 1.06, 1.04, 0.98, 0.95];
+const ECO_DEFAUT = { prix: 0.20, hausse: 3, surplus: 0.06, total: 0.10, contrat: 20, coutWc: null, coutBatt: 700, prime: 0,
+  maintenance: 120, actu: 3, degr: 0.5, coutOndKw: 300, groupe: 0.60, cible: 95, reserve: 20 };
+const COUT_WC = { autoconso: 2.1, batterie: 2.1, revente: 1.7, isole: 2.4 };
+const DUREE = 25;
+
+function normaliser(a) { const s = a.reduce((x, y) => x + y, 0); return a.map(x => x / s); }
+function decalageHoraire(lat, lon) { return (lat > 41 && lat < 52 && lon > -5.5 && lon < 10) ? 1 : Math.round(lon / 15); }
+
+/* Position du soleil (degrés) : zénith et azimut compté depuis le nord, sens horaire */
+function soleil(ms, lat, lon) {
+  const rad = Math.PI / 180, n = ms / 86400000 + 2440587.5 - 2451545.0;
+  const L = (280.460 + 0.9856474 * n) % 360, g = ((357.528 + 0.9856003 * n) % 360) * rad;
+  const lam = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * rad, eps = (23.439 - 0.0000004 * n) * rad;
+  const ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)), dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+  const gmst = ((18.697374558 + 24.06570982441908 * n) % 24 + 24) % 24;
+  const ha = (gmst * 15 + lon) * rad - ra, phi = lat * rad;
+  const alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha));
+  const az = Math.atan2(Math.sin(ha), Math.cos(ha) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)) / rad + 180;
+  return { zen: 90 - alt / rad, az: (az + 360) % 360 };
+}
+
+function courbeCharge(e, site, meteo) {
+  const n = meteo.t.length, off = decalageHoraire(site.lat, site.lon);
+  const prof = normaliser(PROFILS[e.profil] ? PROFILS[e.profil].h : PROFILS.present.h);
+  const heure = new Uint8Array(n), mois = new Uint8Array(n), heuresMois = Array(12).fill(0);
+  for (let i = 0; i < n; i++) {
+    const d = new Date(meteo.t[i] - 3600e3 + off * 3600e3);
+    heure[i] = d.getUTCHours(); mois[i] = d.getUTCMonth(); heuresMois[mois[i]]++;
+  }
+  let em;
+  const saisie = e.consoMois && e.consoMois.length === 12 && e.consoMois.every(x => x > 0);
+  if (saisie) em = e.consoMois.slice();
+  else {
+    let w = tropical(site.lat) ? SAISON_TROP : Array.from({ length: 12 }, (_, m) => 1 + 0.25 * Math.cos(2 * Math.PI * m / 12));
+    if (site.lat < 0) w = w.map((_, m) => w[(m + 6) % 12]);
+    const s = w.reduce((a, b) => a + b, 0);
+    em = w.map(x => e.conso * x / s);
+  }
+  const L = new Float64Array(n);
+  for (let i = 0; i < n; i++) L[i] = em[mois[i]] / (heuresMois[mois[i]] / 24) * prof[heure[i]];
+  return { L, heure, mois, total: em.reduce((a, b) => a + b, 0), saisie };
+}
+
+/* Production DC par kWc et par heure pour chaque pan (modèle isotrope + température Faiman) */
+function irradiancePans(meteo, site, pans) {
+  const rad = Math.PI / 180, n = meteo.t.length;
+  const res = pans.map(p => ({ ...p, dc: new Float64Array(n), poa: 0, ombre: 0, iam: 0, temp: 0, dcSum: 0 }));
+  let ghiSum = 0;
+  for (let i = 0; i < n; i++) {
+    const ghi = meteo.ghi[i] || 0; ghiSum += ghi;
+    if (ghi <= 0) continue;
+    const s = soleil(meteo.t[i] - 1800e3, site.lat, site.lon);
+    const dhi = Math.min(meteo.dhi[i] || 0, ghi), dni = s.zen < 89 ? (meteo.dni[i] || 0) : 0;
+    const cz = Math.cos(s.zen * rad), sz = Math.sin(s.zen * rad);
+    const ta = meteo.ta[i] != null ? meteo.ta[i] : 25, ws = meteo.ws[i] != null ? meteo.ws[i] : 2;
+    for (const p of res) {
+      const b = p.incl * rad, cb = Math.cos(b);
+      const cosT = cz * cb + sz * Math.sin(b) * Math.cos((s.az - p.az) * rad);
+      const beam = cosT > 0 ? dni * cosT : 0;
+      const iam = cosT > 0 ? clamp(1 - 0.05 * (1 / cosT - 1), 0, 1) : 0;
+      const diff = dhi * (1 + cb) / 2, gnd = ghi * ALBEDO * (1 - cb) / 2;
+      const poa = beam + diff + gnd, fo = 1 - (p.ombrage || 0) / 100;
+      const eff = (beam * iam + (diff + gnd) * 0.95) * fo;
+      const tc = ta + poa / (20 + 5 * ws), ft = 1 + GAMMA_P * (tc - 25);
+      const dc = eff / 1000 * ft * (1 - PERTES_DC_DIVERSES);
+      p.dc[i] = dc; p.poa += poa / 1000; p.ombre += poa * fo / 1000; p.iam += eff / 1000; p.temp += eff * ft / 1000; p.dcSum += dc;
+    }
+  }
+  return { ghi: ghiSum / 1000, pans: res };
+}
+
+function capacitePan(p) { return p.surface ? Math.floor(p.surface / (PANEL.aire * 1.1)) : Infinity; }
+
+/* Remplit d'abord les pans les plus productifs */
+function repartirPanneaux(N, pans) {
+  const ordre = pans.map((p, i) => i).sort((a, b) => pans[b].dcSum - pans[a].dcSum);
+  const alloc = pans.map(() => 0);
+  let reste = N;
+  for (const i of ordre) { const k = Math.min(reste, capacitePan(pans[i])); alloc[i] = k; reste -= k; if (!reste) break; }
+  return alloc;
+}
+
+/* Chaque pan utilisé doit porter au moins une chaîne complète (smin panneaux) */
+function equilibrer(alloc, smin, pans) {
+  const a = alloc.slice();
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] === 0 || a[i] >= smin) continue;
+    const manque = smin - a[i];
+    const donneur = a.map((k, j) => j).filter(j => j !== i && a[j] - manque >= smin).sort((x, y) => a[y] - a[x])[0];
+    if (donneur != null && smin <= capacitePan(pans[i])) { a[donneur] -= manque; a[i] = smin; }
+    else { const j = a.map((k, j) => j).filter(j => j !== i && a[j] > 0 && a[j] < capacitePan(pans[j]))[0]; if (j != null) { const k = Math.min(a[i], capacitePan(pans[j]) - a[j]); a[j] += k; a[i] -= k; } }
+  }
+  return a;
+}
+
+function simuler(ch, irr, alloc, sys) {
+  const n = ch.L.length, kwc = alloc.map(k => k * PANEL.p / 1000);
+  const cap = sys.battUtile || 0, socMin = cap * (sys.reserve || 0);
+  let soc = cap * 0.5;
+  const t = { brut: 0, dc: 0, ond: 0, ecretage: 0, ac: 0, direct: 0, charge: 0, decharge: 0, injection: 0, perdu: 0, import: 0, conso: 0, hDeficit: 0 };
+  const m = { prod: Array(12).fill(0), conso: Array(12).fill(0), auto: Array(12).fill(0), import: Array(12).fill(0) };
+  const j = { prod: Array(24).fill(0), conso: Array(24).fill(0) };
+  for (let i = 0; i < n; i++) {
+    let brut = 0;
+    for (let p = 0; p < kwc.length; p++) if (kwc[p]) brut += kwc[p] * irr.pans[p].dc[i];
+    const dc = brut * (1 - sys.pDc), inv = dc * ETA_OND, ac0 = Math.min(inv, sys.pac);
+    const ac = ac0 * (1 - sys.pAc), load = ch.L[i];
+    t.brut += brut; t.dc += dc; t.ond += dc - inv; t.ecretage += inv - ac0; t.ac += ac; t.conso += load;
+    let direct = sys.revente ? 0 : Math.min(ac, load), surplus = ac - direct, deficit = load - direct;
+    if (cap) {
+      const c = Math.min(surplus, (cap - soc) / ETA_BATT, sys.pac); soc += c * ETA_BATT; surplus -= c; t.charge += c;
+      const d = Math.min(deficit, Math.max(0, soc - socMin) * ETA_BATT, sys.pac); soc -= d / ETA_BATT; deficit -= d; t.decharge += d;
+    }
+    const inj = sys.isole ? 0 : Math.min(surplus, sys.capInj);
+    t.injection += inj; t.perdu += surplus - inj; t.direct += direct; t.import += deficit;
+    if (deficit > 0.01) t.hDeficit++;
+    const mo = ch.mois[i], h = ch.heure[i];
+    m.prod[mo] += ac; m.conso[mo] += load; m.auto[mo] += load - deficit; m.import[mo] += deficit;
+    j.prod[h] += ac / 365; j.conso[h] += load / 365;
+  }
+  const autoconso = t.direct + t.decharge;
+  return { ...t, autoconso, mois: m, jour: j,
+    tauxAutoconso: t.ac ? autoconso / t.ac : 0, tauxAutoprod: t.conso ? autoconso / t.conso : 0,
+    couverture: t.conso ? (t.conso - t.import) / t.conso : 0, cycles: cap ? t.decharge / cap : 0 };
+}
+
+function irr_(flux) {
+  const van = r => flux.reduce((s, f, y) => s + f / (1 + r) ** y, 0);
+  let lo = null, hi = null;
+  for (let r = -0.2; r < 1; r += 0.01) if (van(r) * van(r + 0.01) <= 0) { lo = r; hi = r + 0.01; break; }
+  if (lo == null) return null;
+  for (let k = 0; k < 80; k++) { const mid = (lo + hi) / 2; if (van(lo) * van(mid) <= 0) hi = mid; else lo = mid; }
+  return (lo + hi) / 2;
+}
+
+function economie(e, eco, v) {
+  const coutWc = eco.coutWc || COUT_WC[e.type];
+  const posteP = v.kwc * 1000 * coutWc, posteB = v.battKwh * eco.coutBatt, aide = eco.prime * v.kwc;
+  const invest = posteP + posteB - aide;
+  const a = eco.actu / 100, h = eco.hausse / 100, dg = eco.degr / 100;
+  const annees = [], flux = [-invest];
+  let cumul = -invest, retour = null, vanCouts = 0, vanProd = 0, gainTotal = 0;
+  for (let y = 1; y <= DUREE; y++) {
+    const fp = (1 - dg) ** (y - 1), fh = (1 + h) ** (y - 1);
+    let gain = 0;
+    if (e.type === "isole") gain = (v.sim.conso - v.sim.import) * fp * eco.groupe * fh;
+    else {
+      gain = v.sim.autoconso * fp * eco.prix * fh;
+      if (y <= eco.contrat) gain += v.sim.injection * fp * (e.type === "revente" ? eco.total : eco.surplus);
+    }
+    let couts = eco.maintenance * 1.02 ** (y - 1);
+    if (y === 13) couts += v.pac * eco.coutOndKw;
+    if (y === 15 && v.battKwh) couts += posteB * 0.6;
+    const cf = gain - couts, avant = cumul;
+    cumul += cf; gainTotal += cf;
+    if (retour == null && avant < 0 && cumul >= 0) retour = y - 1 + (-avant / cf);
+    annees.push({ y, gain, couts, cf, cumul });
+    flux.push(cf);
+    vanCouts += couts / (1 + a) ** y; vanProd += v.sim.ac * fp / (1 + a) ** y;
+  }
+  const van = flux.reduce((s, f, y) => s + f / (1 + a) ** y, 0);
+  return { invest, posteP, posteB, aide, coutWc, annees, retour, van, tri: irr_(flux), lcoe: (invest + vanCouts) / vanProd, gain1: annees[0].gain - annees[0].couts, gainTotal };
+}
+
+function etudeComplete(e, site, meteo, eco) {
+  const irr = irradiancePans(meteo, site, e.pans);
+  const ch = courbeCharge(e, site, meteo);
+  const best = irr.pans.slice().sort((a, b) => b.dcSum - a.dcSum)[0];
+  const capTot = irr.pans.reduce((s, p) => s + capacitePan(p), 0);
+  const e2 = { ...e, conso: ch.total, azimut: best.az, incl: best.incl, surface: null, nMaxToit: isFinite(capTot) ? capTot : null };
+  const base = dimensionner(e2, site);
+  if (base.erreur) return base;
+  const N0 = base.panneaux.nombre, m0 = base.batterie ? base.batterie.modules : 0;
+  const fN = e.type === "isole" ? [0.6, 0.8, 1, 1.25, 1.5, 2] : [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const fM = e.type === "isole" ? [0.6, 0.8, 1, 1.3, 1.6, 2] : e.type === "batterie" ? [0.5, 1, 1.5, 2] : [0];
+  const vus = new Set(), variantes = [];
+  for (const f of fN) for (const g of fM) {
+    const N = Math.max(2, Math.round(N0 * f)), M = m0 ? Math.max(e.type === "isole" ? 2 : 1, Math.round(m0 * g)) : 0;
+    const essais = [N];
+    for (let t = 0; t < essais.length && t < 3; t++) {
+      const r = dimensionner({ ...e2, nForce: essais[t], battForce: M || undefined }, site);
+      if (r.erreur) continue;
+      const smin = r.onduleur.plage[0];
+      const alloc = equilibrer(repartirPanneaux(r.panneaux.nombre, irr.pans), smin, irr.pans);
+      const petits = alloc.map((k, i) => i).filter(i => alloc[i] > 0 && alloc[i] < smin);
+      if (petits.length && irr.pans.length > 1) {
+        // Pan avec une chaîne incomplète : on essaie sans ces panneaux, puis en complétant la chaîne
+        const somme = alloc.reduce((a, b) => a + b, 0);
+        const sans = somme - petits.reduce((a, i) => a + alloc[i], 0);
+        const avec = somme + petits.reduce((a, i) => a + (smin <= capacitePan(irr.pans[i]) ? smin - alloc[i] : 0), 0);
+        for (const n2 of [sans, avec]) if (n2 >= 2 && !essais.includes(n2)) essais.push(n2);
+        continue;
+      }
+      const cle = r.panneaux.nombre + "-" + (r.batterie ? r.batterie.modules : 0) + "-" + r.onduleur.pac;
+      if (vus.has(cle)) continue; vus.add(cle);
+      const sim = simuler(ch, irr, alloc, { pac: r.onduleur.pac, pDc: r.pertes.dc / 100 * 0.6, pAc: r.pertes.ac / 100,
+        battUtile: r.batterie ? r.batterie.utile : 0, reserve: e.type === "batterie" ? eco.reserve / 100 : 0,
+        capInj: r.capInj, isole: e.type === "isole", revente: e.type === "revente" });
+      const v = { r, alloc, sim, kwc: r.panneaux.kwc, pac: r.onduleur.pac, battKwh: r.batterie ? r.batterie.kwh : 0 };
+      v.eco = economie(e, eco, v);
+      variantes.push(v);
+    }
+  }
+  if (!variantes.length) return { erreur: "Aucune configuration possible avec ces données." };
+  let reco;
+  if (e.type === "isole") {
+    const ok = variantes.filter(v => v.sim.couverture * 100 >= eco.cible);
+    reco = ok.length ? ok.reduce((a, b) => a.eco.invest <= b.eco.invest ? a : b) : variantes.reduce((a, b) => a.sim.couverture >= b.sim.couverture ? a : b);
+    if (!ok.length) reco.r.alertes.unshift({ w: 1, t: `Aucune variante n'atteint ${eco.cible} % de couverture : la meilleure est retenue. Un groupe électrogène sera nécessaire.` });
+  } else reco = variantes.reduce((a, b) => a.eco.van >= b.eco.van ? a : b);
+  variantes.sort((a, b) => a.kwc - b.kwc || a.battKwh - b.battKwh);
+  // Alertes propres aux pans multiples
+  const pansUtilises = reco.alloc.filter(k => k > 0).length;
+  if (pansUtilises > 1) {
+    const mppt = reco.r.onduleur.nMppt * reco.r.onduleur.nombre;
+    reco.r.alertes.unshift({ w: pansUtilises > mppt ? 1 : 0, t: `${pansUtilises} pans d'orientations différentes : une chaîne par pan sur des MPPT séparés (${mppt} MPPT disponibles).` });
+    reco.alloc.forEach((k, i) => { if (k > 0 && k < reco.r.onduleur.plage[0]) reco.r.alertes.unshift({ w: 1, t: `Le pan « ${irr.pans[i].nom} » n'a que ${k} panneaux, en dessous du minimum par chaîne (${reco.r.onduleur.plage[0]}) : prévoir des optimiseurs ou des micro-onduleurs.` }); });
+  }
+  return { irr, ch, variantes, reco, base };
+}
+
+if (typeof module !== "undefined") module.exports = { dimensionner, siteParDefaut, facteurPlan, configChaines, PANEL, etudeComplete, soleil, ECO_DEFAUT };
+</script>
+
+<script>
+/* ====== Interface ====== */
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString("fr-FR");
+const MOIS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function geocoder(adresse) {
+  try {
+    const r = await fetch("https://api-adresse.data.gouv.fr/search/?limit=1&q=" + encodeURIComponent(adresse));
+    const j = await r.json();
+    if (j.features && j.features.length && j.features[0].properties.score > 0.4) {
+      const f = j.features[0];
+      return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], label: f.properties.label };
+    }
+  } catch (_) {}
+  const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(adresse));
+  const j = await r.json();
+  if (!j.length) throw new Error("Adresse introuvable. Précisez la commune et le code postal.");
+  return { lat: +j[0].lat, lon: +j[0].lon, label: j[0].display_name };
+}
+
+async function meteo(lat, lon) {
+  const an = new Date().getFullYear() - 1;
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${an}-01-01&end_date=${an}-12-31&daily=shortwave_radiation_sum&timezone=auto`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("météo");
+  const j = await r.json();
+  const jours = j.daily.time, val = j.daily.shortwave_radiation_sum;
+  const mois = Array(12).fill(0);
+  jours.forEach((d, i) => { mois[+d.slice(5, 7) - 1] += (val[i] || 0) / 3.6; });
+  const ghi = mois.reduce((a, b) => a + b, 0);
+  const moyen = ghi / 12;
+  return { ghi, mois, ratioMin: Math.min(...mois) / moyen, source: `Open-Meteo, données ${an}` };
+}
+
+function lireNombre(id) { const v = $(id).value.trim(); return v === "" ? null : Number(v); }
+
+/* ====== Mode complet : saisie ====== */
+const ORIENT = { 180: "Sud", 135: "Sud-Est", 225: "Sud-Ouest", 90: "Est", 270: "Ouest", 45: "Nord-Est", 315: "Nord-Ouest", 0: "Nord" };
+const MOIS_NOM = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
+const ECO_CHAMPS = [
+  ["prix", "Prix du kWh acheté", "€/kWh", 0.01], ["hausse", "Hausse annuelle du prix", "%/an", 0.5],
+  ["surplus", "Tarif de rachat du surplus", "€/kWh", 0.01], ["total", "Tarif de revente totale", "€/kWh", 0.01],
+  ["contrat", "Durée du contrat de rachat", "ans", 1], ["coutWc", "Coût posé panneaux + onduleur", "€/Wc, vide = auto", 0.1],
+  ["coutBatt", "Coût posé batterie", "€/kWh", 10], ["prime", "Aides / prime", "€/kWc", 10],
+  ["maintenance", "Entretien et assurance", "€/an", 10], ["actu", "Taux d'actualisation", "%", 0.5],
+  ["degr", "Perte de rendement des panneaux", "%/an", 0.1], ["groupe", "Coût du kWh groupe électrogène (site isolé)", "€/kWh", 0.05],
+  ["cible", "Couverture visée (site isolé)", "%", 1], ["reserve", "Réserve batterie pour les coupures", "%", 5],
+];
+const modeComplet = () => document.querySelector("input[name=mode]:checked").value === "complet";
+
+function ajouterPan(d = {}) {
+  if ($("pans").children.length >= 4) return;
+  const n = $("pans").children.length + 1;
+  const div = document.createElement("div");
+  div.className = "pan";
+  div.innerHTML = `<input class="pan-nom" aria-label="Nom du pan" value="${esc(d.nom || "Pan " + n)}">
+    <select class="pan-az" aria-label="Orientation">${$("orient").innerHTML}</select>
+    <input class="pan-incl" aria-label="Inclinaison" type="number" min="0" max="90" value="${d.incl != null ? d.incl : 15}">
+    <input class="pan-surf" aria-label="Surface" type="number" min="0" placeholder="libre" value="${d.surface || ""}">
+    <input class="pan-omb" aria-label="Ombrage" type="number" min="0" max="90" value="${d.ombrage || 0}">
+    <button type="button" class="ghost small" aria-label="Supprimer ce pan">✕</button>`;
+  div.querySelector(".pan-az").value = String(d.az != null ? d.az : 180);
+  div.querySelector("button").onclick = () => { if ($("pans").children.length > 1) div.remove(); };
+  $("pans").appendChild(div);
+}
+
+function lireComplet() {
+  const pans = [...document.querySelectorAll(".pan")].map(d => ({
+    nom: d.querySelector(".pan-nom").value.trim() || "Pan",
+    az: Number(d.querySelector(".pan-az").value),
+    incl: Number(d.querySelector(".pan-incl").value) || 0,
+    surface: Number(d.querySelector(".pan-surf").value) || null,
+    ombrage: clamp(Number(d.querySelector(".pan-omb").value) || 0, 0, 90),
+  }));
+  const profil = $("profil").value;
+  const prof = normaliser(PROFILS[profil].h);
+  const partJour = prof.slice(8, 18).reduce((a, b) => a + b, 0);
+  const consoMois = [...document.querySelectorAll("#moisConso input")].map(i => Number(i.value) || 0);
+  return { pans, profil, partJour, consoMois: consoMois.every(x => x > 0) ? consoMois : null };
+}
+
+function lireEco() {
+  const eco = { ...ECO_DEFAUT };
+  for (const [k] of ECO_CHAMPS) { const v = lireNombre("eco_" + k); if (v != null) eco[k] = v; }
+  return eco;
+}
+
+async function meteoHoraire(lat, lon) {
+  const an = new Date().getFullYear() - 1;
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&start_date=${an}-01-01&end_date=${an}-12-31` +
+    `&hourly=shortwave_radiation,diffuse_radiation,direct_normal_irradiance,temperature_2m,wind_speed_10m&wind_speed_unit=ms&timezone=GMT`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("météo");
+  const h = (await r.json()).hourly;
+  const ghiMois = Array(12).fill(0);
+  h.time.forEach((t, i) => { ghiMois[+t.slice(5, 7) - 1] += (h.shortwave_radiation[i] || 0) / 1000; });
+  const ghiAn = ghiMois.reduce((a, b) => a + b, 0);
+  return {
+    t: h.time.map(s => Date.parse(s + ":00Z")), // horodatage = fin de l'heure moyennée
+    ghi: h.shortwave_radiation, dhi: h.diffuse_radiation, dni: h.direct_normal_irradiance, ta: h.temperature_2m, ws: h.wind_speed_10m,
+    ghiAn, ghiMois, ratioMin: Math.min(...ghiMois) / (ghiAn / 12), source: `Open-Meteo, météo réelle ${an} heure par heure`,
+  };
+}
+
+(function initComplet() {
+  ajouterPan({ nom: "Pan principal" });
+  $("addPan").onclick = () => ajouterPan();
+  $("profil").innerHTML = Object.entries(PROFILS).map(([k, p]) => `<option value="${k}">${p.nom}</option>`).join("");
+  $("profil").value = "clim_jour";
+  $("moisConso").innerHTML = MOIS_NOM.map(m => `<input type="number" min="0" placeholder="${m}" aria-label="Consommation ${m}">`).join("");
+  $("ecoGrid").innerHTML = ECO_CHAMPS.map(([k, l, u, st]) =>
+    `<div><label for="eco_${k}">${l} <small>(${u})</small></label><input id="eco_${k}" type="number" step="${st}" ${k === "coutWc" ? 'placeholder="auto"' : `value="${ECO_DEFAUT[k]}"`}></div>`).join("");
+  const maj = () => document.body.classList.toggle("complet", modeComplet());
+  document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", maj));
+  maj();
+})();
+
+/* ====== Mode complet : graphiques ====== */
+const C_PROD = "#d9822b", C_CONSO = "#4a6b82", C_POS = "#2f7d4f", C_NEG = "#b4531d";
+function niceMax(v) { if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+const kfmt = v => Math.abs(v) >= 10000 ? `${fmt(Math.round(v / 1000))} k` : fmt(Math.round(v));
+function legende(series) { return `<div class="legend">${series.map(s => `<span><i style="background:${s.leg || s.couleur}"></i>${s.nom}</span>`).join("")}</div>`; }
+function svgBarres(cats, series, fy = kfmt) {
+  const W = 640, H = 220, pl = 54, pr = 8, pt = 10, pb = 24;
+  const all = series.flatMap(s => s.vals);
+  const maxV = niceMax(Math.max(0, ...all)), minV = Math.min(...all) < 0 ? -niceMax(-Math.min(...all)) : 0;
+  const y = v => pt + (maxV - v) / (maxV - minV) * (H - pt - pb);
+  const cw = (W - pl - pr) / cats.length, bw = cw * 0.8 / series.length;
+  let g = "";
+  for (let k = 0; k <= 4; k++) { const v = minV + (maxV - minV) * k / 4; g += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="#e2dfd6"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end">${fy(v)}</text>`; }
+  cats.forEach((c, i) => {
+    series.forEach((s, j) => {
+      const v = s.vals[i], x0 = pl + i * cw + cw * 0.1 + j * bw, col = typeof s.couleur === "function" ? s.couleur(v) : s.couleur;
+      g += `<rect x="${x0.toFixed(1)}" y="${y(Math.max(0, v)).toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${Math.max(0.5, Math.abs(y(v) - y(0))).toFixed(1)}" fill="${col}" rx="2"><title>${c} · ${s.nom} : ${fy(v)}</title></rect>`;
+    });
+    if (cats.length <= 12 || i === 0 || (i + 1) % 5 === 0) g += `<text x="${(pl + i * cw + cw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${c}</text>`;
+  });
+  if (minV < 0) g += `<line x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}" stroke="#5f6b72"/>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+function svgCourbes(cats, series, fy) {
+  const W = 640, H = 220, pl = 54, pr = 8, pt = 10, pb = 24;
+  const maxV = niceMax(Math.max(...series.flatMap(s => s.vals)));
+  const x = i => pl + i * (W - pl - pr) / (cats.length - 1), y = v => pt + (maxV - v) / maxV * (H - pt - pb);
+  let g = "";
+  for (let k = 0; k <= 4; k++) { const v = maxV * k / 4; g += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="#e2dfd6"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end">${fy(v)}</text>`; }
+  cats.forEach((c, i) => { if (i % 3 === 0) g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${c}</text>`; });
+  series.forEach(s => {
+    const pts = s.vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    if (s.aire) g += `<polygon points="${x(0)},${y(0)} ${pts} ${x(cats.length - 1)},${y(0)}" fill="${s.couleur}" opacity=".18"/>`;
+    g += `<polyline points="${pts}" fill="none" stroke="${s.couleur}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+
+/* ====== Mode complet : rendu ====== */
+function sectionsCompletes(res, e, eco, site) {
+  const v = res.reco, s = v.sim, x = v.eco, isole = e.type === "isole", revente = e.type === "revente";
+  const euro = n => `${fmt(Math.round(n))} €`, pct = n => `${Math.round(n * 100)} %`, kwh = n => `${fmt(Math.round(n))} kWh`;
+  const dec = (n, d = 1) => String(round(n, d)).replace(".", ",");
+  const ligne = (a, b, c = "") => `<tr><td>${a}</td><td class="num">${b}</td>${c !== null ? `<td class="num note">${c}</td>` : ""}</tr>`;
+
+  // Rentabilité
+  const cumul = x.annees.map(a => a.cumul);
+  const anSel = [1, 2, 3, 5, 10, 13, 15, 20, 25];
+  const eco1 = `
+  <section class="card">
+    <h2>Rentabilité sur ${DUREE} ans</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Investissement</div><div class="v">${euro(x.invest)}</div><div class="note">${x.aide ? `après ${euro(x.aide)} d'aides` : "aucune aide déduite"}</div></div>
+      <div class="kpi"><div class="l">Gain net année 1</div><div class="v">${euro(x.gain1)}</div><div class="note">${isole ? "par rapport à un groupe électrogène" : "économies + vente − entretien"}</div></div>
+      <div class="kpi"><div class="l">Retour sur investissement</div><div class="v">${x.retour != null ? dec(x.retour) + " ans" : `> ${DUREE} ans`}</div><div class="note">TRI ${x.tri != null ? dec(x.tri * 100) + " %" : "non calculable"}</div></div>
+      <div class="kpi"><div class="l">Bénéfice net sur ${DUREE} ans</div><div class="v">${euro(cumul[cumul.length - 1])}</div><div class="note">VAN à ${dec(eco.actu)} % : ${euro(x.van)}</div></div>
+      <div class="kpi"><div class="l">Coût du kWh solaire</div><div class="v">${dec(x.lcoe, 3)} €</div><div class="note">contre ${dec(isole ? eco.groupe : eco.prix, 2)} € ${isole ? "au groupe" : "au réseau"}</div></div>
+    </div>
+    <h3>Trésorerie cumulée (€)</h3>
+    ${svgBarres(x.annees.map(a => String(a.y)), [{ nom: "Cumul", vals: cumul, couleur: c => c < 0 ? C_NEG : C_POS }])}
+    <div class="two">
+      <div><h3>Investissement</h3><table>
+        ${ligne(`Panneaux, onduleur, pose (${dec(v.kwc, 2)} kWc × ${dec(x.coutWc, 2)} €/Wc)`, euro(x.posteP), null)}
+        ${x.posteB ? ligne(`Batteries (${dec(v.battKwh, 2)} kWh × ${fmt(eco.coutBatt)} €/kWh)`, euro(x.posteB), null) : ""}
+        ${x.aide ? ligne("Aides déduites", "− " + euro(x.aide), null) : ""}
+        <tr><td><b>Total</b></td><td class="num"><b>${euro(x.invest)}</b></td></tr>
+      </table></div>
+      <div><h3>Flux par année</h3><table><thead><tr><th>Année</th><th>Gains</th><th>Charges</th><th>Cumul</th></tr></thead><tbody>
+        ${x.annees.filter(a => anSel.includes(a.y)).map(a => `<tr><td>${a.y}${a.y === 13 ? " <small class=note>(onduleur)</small>" : a.y === 15 && v.battKwh ? " <small class=note>(batterie)</small>" : ""}</td><td class="num">${euro(a.gain)}</td><td class="num">${euro(a.couts)}</td><td class="num">${euro(a.cumul)}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div>
+  </section>`;
+
+  // Bilan énergétique
+  const bilan = `
+  <section class="card">
+    <h2>Bilan énergétique (simulation heure par heure)</h2>
+    <div class="two">
+      <table>
+        ${ligne("Consommation du client", kwh(s.conso), "")}
+        ${ligne("Production solaire", kwh(s.ac), `${fmt(r0(s.ac / v.kwc))} kWh/kWc`)}
+        ${!revente ? ligne("Consommée directement", kwh(s.direct), s.ac ? pct(s.direct / s.ac) + " de la prod." : "") : ""}
+        ${v.battKwh ? ligne("Restituée par la batterie", kwh(s.decharge), `${fmt(r0(s.cycles))} cycles/an`) : ""}
+        ${!isole ? ligne("Injectée sur le réseau", kwh(s.injection), s.ac ? pct(s.injection / s.ac) : "") : ""}
+        ${s.perdu > 1 ? ligne(isole ? "Non utilisée (batterie pleine)" : "Perdue (injection plafonnée)", kwh(s.perdu), pct(s.perdu / s.ac)) : ""}
+        ${!revente ? ligne(isole ? "Manque, à fournir par un groupe électrogène" : "Achetée au réseau", kwh(s.import), isole ? `${fmt(s.hDeficit)} h dans l'année` : "") : ""}
+        ${!revente ? ligne("<b>Taux d'autoconsommation</b>", `<b>${pct(s.tauxAutoconso)}</b>`, "part de la production utilisée sur place") : ""}
+        ${!revente ? ligne(`<b>${isole ? "Couverture des besoins" : "Taux d'autoproduction"}</b>`, `<b>${pct(isole ? s.couverture : s.tauxAutoprod)}</b>`, "part de la conso fournie par le solaire") : ""}
+      </table>
+      <div>
+        <h3 style="margin-top:0">Journée moyenne (kW)</h3>
+        ${legende([{ nom: "Production", couleur: C_PROD }, { nom: "Consommation", couleur: C_CONSO }])}
+        ${svgCourbes(Array.from({ length: 24 }, (_, h) => h + " h"), [{ vals: s.jour.prod, couleur: C_PROD, aire: true }, { vals: s.jour.conso, couleur: C_CONSO }], v => dec(v, 1))}
+      </div>
+    </div>
+    <h3>Mois par mois (kWh)</h3>
+    ${legende([{ nom: "Production", couleur: C_PROD }, { nom: "Consommation", couleur: C_CONSO }, ...(revente ? [] : [{ nom: isole ? "Couvert par le solaire" : "Autoconsommé", couleur: C_POS }])])}
+    ${svgBarres(MOIS_NOM, [{ nom: "Production", vals: s.mois.prod, couleur: C_PROD }, { nom: "Consommation", vals: s.mois.conso, couleur: C_CONSO }, ...(revente ? [] : [{ nom: "Autoconsommé", vals: s.mois.auto, couleur: C_POS }])])}
+  </section>`;
+
+  // Pertes
+  const kp = v.alloc.map(k => k * PANEL.p / 1000);
+  const S = f => v.alloc.reduce((t, k, i) => t + kp[i] * res.irr.pans[i][f], 0);
+  const etapes = [
+    ["Rayonnement reçu par les panneaux", S("poa")], ["Ombrage", S("ombre")], ["Reflets sur le verre", S("iam")],
+    ["Échauffement des cellules", S("temp")], ["Salissures, dispersion, vieillissement, disponibilité", s.brut],
+    ["Câbles côté panneaux (DC)", s.dc], ["Rendement de l'onduleur", s.dc - s.ond], ["Écrêtage de l'onduleur", s.dc - s.ond - s.ecretage], ["Câbles côté maison (AC)", s.ac],
+  ];
+  const pertes = `
+  <section class="card">
+    <h2>Du soleil à la prise : les pertes</h2>
+    <p class="meta">Ensoleillement au sol : ${fmt(r0(res.irr.ghi))} kWh/m²/an · dans le plan des panneaux : ${fmt(r0(S("poa") / v.kwc))} kWh/m²/an · rendement global : ${pct(s.ac / S("poa"))}</p>
+    <table><thead><tr><th>Étape</th><th>Énergie restante</th><th>Perte</th></tr></thead><tbody>
+      ${etapes.map(([l, val], i) => `<tr><td>${l}</td><td class="num">${kwh(val)}</td><td class="num note">${i ? "− " + dec((1 - val / etapes[i - 1][1]) * 100) + " %" : ""}</td></tr>`).join("")}
+    </tbody></table>
+  </section>`;
+
+  // Variantes
+  const cle = w => isole ? (w.sim.couverture * 100 >= eco.cible ? -w.eco.invest : -1e9 + w.sim.couverture) : w.eco.van;
+  const top = res.variantes.slice().sort((a, b) => cle(b) - cle(a)).slice(0, 12);
+  const liste = res.variantes.filter(w => top.includes(w));
+  const variantes = `
+  <section class="card">
+    <h2>Variantes comparées</h2>
+    <p class="meta">${res.variantes.length} configurations simulées. Recommandée (surlignée) : ${isole ? `la moins chère qui couvre au moins ${eco.cible} % des besoins` : "celle qui rapporte le plus sur 25 ans (meilleure VAN)"}.</p>
+    <table><thead><tr><th>Panneaux</th><th>Onduleur</th>${e.type === "batterie" || isole ? "<th>Batterie</th>" : ""}<th>Production</th>${revente ? "" : `<th>${isole ? "Couverture" : "Autoprod."}</th><th>Autoconso.</th>`}<th>Investissement</th><th>Retour</th><th>VAN</th></tr></thead><tbody>
+      ${liste.map(w => `<tr class="${w === v ? "reco" : ""}"><td>${w.r.panneaux.nombre} × ${PANEL.p} Wc · ${dec(w.kwc, 2)} kWc</td><td>${w.r.onduleur.nombre} × ${dec(w.pac / w.r.onduleur.nombre, 2)} kW</td>${e.type === "batterie" || isole ? `<td class="num">${dec(w.battKwh, 1)} kWh</td>` : ""}<td class="num">${kwh(w.sim.ac)}</td>${revente ? "" : `<td class="num">${pct(isole ? w.sim.couverture : w.sim.tauxAutoprod)}</td><td class="num">${pct(w.sim.tauxAutoconso)}</td>`}<td class="num">${euro(w.eco.invest)}</td><td class="num">${w.eco.retour != null ? dec(w.eco.retour) + " ans" : "—"}</td><td class="num">${euro(w.eco.van)}</td></tr>`).join("")}
+    </tbody></table>
+  </section>`;
+
+  // Hypothèses
+  const hyp = `
+  <section class="card">
+    <h2>Hypothèses de calcul</h2>
+    <ul class="alerts note">
+      <li>Météo : ${esc(site.source)} (rayonnement direct et diffus, température, vent), position du soleil calculée heure par heure.</li>
+      <li>Consommation : ${res.ch.saisie ? "12 mois saisis depuis les factures" : `${fmt(Math.round(res.ch.total))} kWh/an répartis selon la saison`}, profil horaire « ${PROFILS[e.profil].nom} ».</li>
+      <li>Panneaux : ${PANEL.nom}, perte de ${-GAMMA_P * 100} %/°C au-delà de 25 °C, salissures et pertes diverses ${PERTES_DC_DIVERSES * 100} %, onduleur ${ETA_OND * 100} %, batterie ${ETA_BATT * 100} % à la charge et à la décharge.</li>
+      ${e.type === "batterie" ? `<li>Batterie : ${eco.reserve} % gardés en réserve pour les coupures du réseau.</li>` : ""}
+      <li>Prix : électricité ${dec(eco.prix, 2)} €/kWh (+${dec(eco.hausse)} %/an)${isole ? `, groupe électrogène ${dec(eco.groupe, 2)} €/kWh` : `, rachat ${dec(revente ? eco.total : eco.surplus, 2)} €/kWh pendant ${eco.contrat} ans`}, entretien ${fmt(eco.maintenance)} €/an.</li>
+      <li>Remplacements : onduleur l'année 13 (${eco.coutOndKw} €/kW)${v.battKwh ? ", batteries l'année 15 (60 % du prix d'achat)" : ""}. Perte de rendement des panneaux ${dec(eco.degr)} %/an.</li>
+      <li>Les tarifs de rachat et les aides en Martinique (EDF SEI, Région, CRE) changent régulièrement : vérifiez les montants du moment avant de présenter l'étude.</li>
+    </ul>
+  </section>`;
+
+  return eco1 + bilan + pertes + variantes + hyp;
+}
+const r0 = n => Math.round(n);
+
+$("go").addEventListener("click", async () => {
+  const adresse = $("adresse").value.trim();
+  const conso = lireNombre("conso");
+  if (!adresse) return status("Saisissez l'adresse du chantier.");
+  if (!conso || conso < 100) return status("Saisissez la consommation annuelle en kWh (elle figure sur la facture).");
+  $("go").disabled = true;
+  try {
+    status("Recherche de l'adresse…");
+    const geo = await geocoder(adresse);
+    const entree = {
+      conso, kva: Number($("kva").value), phase: $("phase").value,
+      type: document.querySelector("input[name=type]:checked").value,
+      surface: lireNombre("surface"), azimut: Number($("orient").value), incl: lireNombre("incl"),
+      partJour: (lireNombre("jour") || 45) / 100, ldc: lireNombre("ldc") || 15, lac: lireNombre("lac") || 10,
+      autonomie: lireNombre("autonomie"), yieldForce: lireNombre("yield"),
+    };
+    if (modeComplet()) {
+      status("Téléchargement de la météo heure par heure (8 760 heures)…");
+      let mh;
+      try { mh = await meteoHoraire(geo.lat, geo.lon); }
+      catch (_) { throw new Error("Données météo horaires indisponibles pour l'instant. Réessayez ou utilisez l'étude rapide."); }
+      const site = { lat: geo.lat, lon: geo.lon, ghi: mh.ghiAn, ratioMin: mh.ratioMin, mois: mh.ghiMois, source: mh.source, ghiSource: "api" };
+      Object.assign(entree, lireComplet());
+      entree.yieldForce = null; entree.autonomie = lireNombre("autonomie");
+      const eco = lireEco();
+      status("Simulation de l'installation heure par heure et comparaison des variantes…");
+      await new Promise(res => setTimeout(res, 30));
+      const res = etudeComplete(entree, site, mh, eco);
+      if (res.erreur) { status(res.erreur); return; }
+      const v = res.reco, s = v.sim, r = v.r;
+      const poaPond = v.alloc.reduce((t, k, i) => t + k * PANEL.p / 1000 * res.irr.pans[i].poa, 0);
+      r.productible = Math.round(s.ac / v.kwc); r.pr = s.ac / poaPond;
+      r.energie = { production: Math.round(s.ac), autoconso: Math.round(entree.type === "isole" ? s.conso - s.import : s.autoconso), injection: Math.round(s.injection),
+        couverture: Math.round((entree.type === "revente" ? s.ac / s.conso : entree.type === "isole" ? s.couverture : s.tauxAutoprod) * 100) };
+      entree.pansTexte = v.alloc.map((k, i) => k ? `${esc(res.irr.pans[i].nom)} (${ORIENT[res.irr.pans[i].az]}, ${res.irr.pans[i].incl}°) : ${k} panneaux` : "").filter(Boolean).join(" · ");
+      entree.conso = Math.round(res.ch.total);
+      afficher(r, entree, geo, site);
+      document.querySelector("#result .card").insertAdjacentHTML("afterend", sectionsCompletes(res, entree, eco, site));
+    } else {
+      status("Récupération de l'ensoleillement…");
+      let site;
+      try { site = await meteo(geo.lat, geo.lon); site.ghiSource = "api"; }
+      catch (_) { site = siteParDefaut(geo.lat); site.ghiSource = "defaut"; }
+      site.lat = geo.lat; site.lon = geo.lon;
+      const r = dimensionner(entree, site);
+      if (r.erreur) { status(r.erreur); return; }
+      afficher(r, entree, geo, site);
+    }
+    status("");
+    $("print").disabled = false;
+  } catch (err) {
+    status(err.message || "Erreur réseau. Vérifiez la connexion internet.");
+  } finally { $("go").disabled = false; }
+});
+$("print").addEventListener("click", () => window.print());
+function status(t) { $("status").textContent = t; }
+
+const LIB_TYPE = { autoconso: "Autoconsommation avec vente du surplus", batterie: "Autoconsommation avec batterie", isole: "Site isolé (hors réseau)", revente: "Revente totale" };
+
+function afficher(r, e, geo, site) {
+  const nom = $("nom").value.trim();
+  const o = r.onduleur, p = r.panneaux, b = r.batterie, en = r.energie;
+  const max = site.mois ? Math.max(...site.mois) : 0;
+  const bars = site.mois && !e.pansTexte ? `<div class="bars-wrap"><div class="bars">${site.mois.map((m, i) =>
+    `<div style="height:${(m / max * 100).toFixed(0)}%" title="${Math.round(m * r.productible / site.ghi * p.kwc)} kWh"><span>${MOIS[i]}</span></div>`).join("")}</div></div>` : "";
+  const ligne = (a, v) => `<tr><td>${a}</td><td class="num">${v}</td></tr>`;
+  $("result").innerHTML = `
+  <section class="card">
+    <h2>${nom ? esc(nom) + " · " : ""}${LIB_TYPE[e.type]}</h2>
+    <p class="meta">${esc(geo.label)} · ${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} · ${fmt(e.conso)} kWh/an · ${e.kva} kVA ${r.tri ? "triphasé" : "monophasé"} · étude du ${new Date().toLocaleDateString("fr-FR")}</p>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Panneaux</div><div class="v">${p.nombre}</div><div class="note">${fmt(p.kwc)} kWc · ${fmt(p.surface)} m²</div></div>
+      <div class="kpi"><div class="l">Onduleur${o.nombre > 1 ? "s" : ""}</div><div class="v">${o.nombre} × ${String(o.pac / o.nombre).replace(".", ",")} kW</div><div class="note">${e.type === "isole" ? "onduleur-chargeur" : `rapport DC/AC ${String(o.ratio).replace(".", ",")}`}</div></div>
+      ${b ? `<div class="kpi"><div class="l">Batteries</div><div class="v">${fmt(b.kwh)} kWh</div><div class="note">${b.modules} module${b.modules > 1 ? "s" : ""} · ${fmt(b.utile)} kWh utiles</div></div>` : ""}
+      <div class="kpi"><div class="l">Production</div><div class="v">${fmt(en.production)}</div><div class="note">kWh/an</div></div>
+      <div class="kpi"><div class="l">${e.type === "revente" ? "Production / conso" : e.type === "isole" ? "Couverture mois faible" : "Couverture de la conso"}</div><div class="v">${en.couverture} %</div><div class="note">${e.type === "revente" ? "tout est injecté" : `${fmt(en.autoconso)} kWh autoconsommés`}</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Panneaux et onduleurs</h2>
+    <table>
+      ${ligne("Module", p.modele)}
+      ${ligne("Nombre de panneaux", `${p.nombre} (${fmt(p.kwc)} kWc)`)}
+      ${e.pansTexte ? ligne("Répartition sur le toit", e.pansTexte) : ligne("Orientation / inclinaison", `${$("orient").selectedOptions[0].text} · ${r.incl}° (facteur ${String(r.fPlan).replace(".", ",")})`)}
+      ${ligne("Productible retenu", `${fmt(r.productible)} kWh/kWc/an (rendement global ${Math.round(r.pr * 100)} %)`)}
+      ${ligne("Onduleur", `${o.nombre} × ${esc(o.modele)}`)}
+      ${ligne("Câblage par onduleur", `${o.chaines} chaîne${o.chaines > 1 ? "s" : ""} de ${o.parChaine} panneaux sur ${o.nMppt} MPPT (${o.chainesParMppt} par MPPT max.)`)}
+      ${ligne("Tension d'une chaîne", `${o.vmpNom} V nominal · ${o.vmpMin} V à chaud · Voc max ${o.vocMax} V à froid`)}
+      ${ligne("Plage admise par chaîne", `${o.plage[0]} à ${o.plage[1]} panneaux`)}
+      ${e.type !== "isole" ? ligne("Injection maximale", `${r.capInj} kVA`) : ""}
+      ${b ? ligne("Stockage", `${b.modules} × module LFP 5,12 kWh = ${fmt(b.kwh)} kWh (besoin ${fmt(b.besoin)} kWh utiles${b.autonomie ? `, ${String(b.autonomie).replace(".", ",")} j d'autonomie` : " pour le soir et la nuit"})`) : ""}
+    </table>
+    ${bars ? `<p class="note" style="margin-top:14px">Production estimée par mois (${esc(site.source)})</p>${bars}` : ""}
+  </section>
+
+  <section class="card">
+    <h2>À ajouter au tableau électrique</h2>
+    <table><thead><tr><th>Emplacement</th><th>Équipement</th><th>Qté</th><th>Remarque</th></tr></thead><tbody>
+      ${r.tableau.map(t => `<tr><td>${t.z}</td><td>${t.e}</td><td class="num">${t.q}</td><td class="note">${t.n}</td></tr>`).join("")}
+    </tbody></table>
+  </section>
+
+  <section class="card">
+    <h2>Câbles</h2>
+    <table><thead><tr><th>Liaison</th><th>Section</th><th>Longueur</th><th>Détail</th></tr></thead><tbody>
+      ${r.cables.map(c => `<tr><td>${c.c}</td><td class="num">${c.s}</td><td class="num">${c.l}</td><td class="note">${c.n}</td></tr>`).join("")}
+    </tbody></table>
+  </section>
+
+  ${r.alertes.length ? `<section class="card"><h2>Points d'attention</h2><ul class="alerts">${r.alertes.map(a => `<li class="${a.w ? "warn" : ""}">${a.t}</li>`).join("")}</ul></section>` : ""}
+
+  <section class="card"><div class="disclaimer"><b>Pré-étude indicative.</b> Le matériel est générique et les calculs simplifiés. Avant le devis, le dimensionnement doit être validé par un installateur qualifié (QualiPV / RGE) : NF C 15-100, guides UTE C15-712-1 et C15-712-2 (stockage), notices des fabricants, exigences EDF SEI / Enedis et attestation Consuel. Il faut aussi vérifier la toiture et la charpente sur place.</div></section>`;
+  $("result").style.display = "block";
+  $("result").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>
